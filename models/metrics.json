@@ -1,0 +1,48 @@
+{
+  "f1": 0.6904761904761905,
+  "auprc": 0.5863053278520556,
+  "classification_report": {
+    "0": {
+      "precision": 0.9855508729680915,
+      "recall": 0.9987797437461867,
+      "f1-score": 0.9921212121212121,
+      "support": 1639.0
+    },
+    "1": {
+      "precision": 0.9354838709677419,
+      "recall": 0.5471698113207547,
+      "f1-score": 0.6904761904761905,
+      "support": 53.0
+    },
+    "accuracy": 0.9846335697399528,
+    "macro avg": {
+      "precision": 0.9605173719679168,
+      "recall": 0.7729747775334708,
+      "f1-score": 0.8412987012987012,
+      "support": 1692.0
+    },
+    "weighted avg": {
+      "precision": 0.9839825803522413,
+      "recall": 0.9846335697399528,
+      "f1-score": 0.9826725205448609,
+      "support": 1692.0
+    }
+  },
+  "scale_pos_weight": 30.769953051643192,
+  "categorical_features": [
+    "type",
+    "dest_is_merchant",
+    "orig_is_merchant"
+  ],
+  "numeric_features": [
+    "amount",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "oldbalanceDest",
+    "newbalanceDest",
+    "hour_of_day",
+    "balance_error_orig",
+    "balance_error_dest"
+  ],
+  "test_size": 0.2
+}
