@@ -1,0 +1,9 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - RISKY_MODEL_PATH=/app/models/model.joblib
+    volumes:
+      - ./models:/app/models:ro

@@ -40,6 +40,10 @@ Docker:
 docker build -t risky-api .
 docker run -p 8000:8000 -e RISKY_MODEL_PATH=/app/models/model.joblib -v $(pwd)/models:/app/models risky-api
 ```
+Docker Compose (1 comando):
+```bash
+docker compose up --build
+```
 
 ### Exemplo de requisição
 ```bash
@@ -80,6 +84,11 @@ Resposta:
 pytest
 ```
 `tests/test_api.py` cria um modelo dummy, injeta via `RISKY_MODEL_PATH` e valida `/predict`.
+
+Teste de integração (API rodando):
+```bash
+python test_api.py
+```
 
 ## Próximos passos (sugestão)
 1) Adicionar SHAP Waterfall para casos de fraude salvos em `notebooks/`.  

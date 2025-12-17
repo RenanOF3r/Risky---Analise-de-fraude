@@ -1,0 +1,26 @@
+# Python / venv
+.venv/
+__pycache__/
+*.py[cod]
+
+# Testing
+.pytest_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data (datasets grandes)
+data/*.csv
+data/*.parquet
+
+# Model artifacts (não versionar binários)
+models/*.joblib
+models/*.pkl
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
