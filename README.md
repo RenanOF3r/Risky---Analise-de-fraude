@@ -1,14 +1,14 @@
-# Risky: Microserviço de Detecção de Fraude em Tempo Real com IA Explicável (<50ms)
+# Risky: API de Detecção de Fraude em Tempo Real com IA Explicável (<50ms)
 
 API e pipeline fim-a-fim para detectar fraudes financeiras em tempo real usando PaySim, com engenharia de features de domínio, tratamento de desbalanceamento e explicabilidade.
 
 ## Problema de negócio
-- Fraude é assimétrica: falso positivo gera churn e dano reputacional; falso negativo gera perda direta.  
-- Objetivo: maximizar F1/AUPRC equilibrando precisão e recall, entregando motivo claro para analistas.
+- Fraude é assimétrica: falso positivo gera churn e dano reputacional; falso negativo gera prejuízo direto.
+- Objetivo: equilibrar Precisão/Recall (F1 e AUPRC), mantendo explicação clara para revisão humana.
 
 ## Stack
-- Python 3.10+, Pandas/Numpy, Scikit-Learn + XGBoost/LightGBM, Imbalanced-Learn, SHAP.
-- FastAPI + Pydantic para a API; Docker para deploy; pytest para teste de integração.
+- Python 3.10+, Pandas/Numpy, Scikit-Learn + XGBoost/LightGBM, Imbalanced-Learn, SHAP (opcional).
+- FastAPI + Pydantic para a API; Docker/Docker Compose para deploy; pytest para testes.
 
 ## Arquitetura (alto nível)
 ```mermaid
@@ -20,17 +20,24 @@ flowchart LR
 ```
 
 ## Dataset
-- Principal: PaySim (Kaggle).  
-- Baixe o CSV em `data/paysim.csv` (não versionado).  
-- O modelo usa apenas TRANSFER e CASH_OUT (padrão de fraude do dataset).
+- Principal: PaySim (Kaggle).
+- Coloque o CSV em `data/paysim.csv` (não versionado).
+- O modelo é treinado apenas com `TRANSFER` e `CASH_OUT` (padrão de fraude do dataset).
 
-## Como treinar
+## EDA (Fase 1)
+Gera gráficos e calcula **null accuracy** (baseline “tudo legítimo”):
 ```bash
-python -m app.train --csv-path data/paysim.csv --artifacts-dir models
+python notebooks/01_eda.py --csv-path data/paysim.csv --out-dir reports/eda
 ```
-Saídas: `models/model.joblib`, `models/preprocessor.joblib`, `models/metrics.json`.
 
-## Como rodar a API
+## Treino
+```bash
+python -m app.train --csv-path data/paysim.csv --artifacts-dir models --reports-dir reports
+```
+- Artefatos: `models/model.joblib`, `models/preprocessor.joblib`, `models/metrics.json`.
+- Relatórios: `reports/confusion_matrix.png`, `reports/pr_curve.png`, `reports/threshold_tuning.csv`.
+
+## Rodar a API
 Local:
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -62,35 +69,42 @@ curl -X POST http://localhost:8000/predict \
     "isFlaggedFraud": 0
   }'
 ```
-Resposta:
-```json
-{"fraud_probability": 0.85, "is_fraud": true, "reason_code": "HIGH_AMOUNT"}
-```
+
+## Endpoints
+- `GET /health` → saúde do serviço.
+- `POST /predict` → retorna `fraud_probability`, `is_fraud`, `reason_code` e `threshold`.
+- `POST /explain` → retorna contribuições SHAP (quando disponível).
 
 ## Engenharia de features (app/pipeline.py)
-- `hour_of_day = step % 24` (fraudes de madrugada).  
-- `balance_error_orig/dest = saldo_ant + amount - saldo_novo` (inconsistência de saldo).  
-- Flags de conta destino/origem iniciando com `M` (comerciantes).  
-- Filtro de tipos de maior risco: TRANSFER e CASH_OUT.
+- Temporais: `hour_of_day = step % 24`.
+- Domínio: `balance_error_orig/dest = oldBalance + amount - newBalance`.
+- Velocidade (offline): contagem de transações por conta na última 1h (step atual + step anterior).
+- Velocidade (online/API): buffer em memória (demo) para `tx_count_*_last_1h`.
 
 ## Modelagem
-- Pipeline com `ColumnTransformer` (OneHot + StandardScaler) + XGBClassifier.  
-- Desbalanceamento: `scale_pos_weight` calibrado pela razão negativo/positivo.  
-- Métricas: F1 e AUPRC (salvas em `models/metrics.json`).  
-- Explicabilidade: razão simples (`reason_code`) e gancho para SHAP (modelo é baseado em árvore).
+- Pipeline com `ColumnTransformer` (OneHot + StandardScaler) + XGBClassifier.
+- Desbalanceamento: `scale_pos_weight` calibrado pela razão negativo/positivo.
+- Métricas: F1/AUPRC + **threshold tuning** (salvo como `best_threshold` em `models/metrics.json`).
+
+## Explicabilidade (XAI)
+- A API sempre retorna `reason_code` (heurística de negócio).
+- O endpoint `/explain` usa SHAP quando o pacote estiver instalado.
+- No Windows + Python 3.13, `shap` pode falhar sem build tools; recomenda-se rodar SHAP via Docker (Python 3.11, já suportado).
+
+Para gerar um waterfall SHAP para um caso de fraude:
+```bash
+python notebooks/02_shap_waterfall.py --csv-path data/paysim.csv --model-path models/model.joblib --out-path reports/shap_waterfall.png
+```
 
 ## Testes
 ```bash
 pytest
 ```
-`tests/test_api.py` cria um modelo dummy, injeta via `RISKY_MODEL_PATH` e valida `/predict`.
-
 Teste de integração (API rodando):
 ```bash
-python test_api.py
+python scripts/check_api.py
 ```
 
 ## Próximos passos (sugestão)
-1) Adicionar SHAP Waterfall para casos de fraude salvos em `notebooks/`.  
-2) Implementar buffer de transações para feature de velocidade (n transações/última hora).  
-3) Incluir docker-compose com Postgres/Redis para rastrear decisões.
+1) Persistir buffer de velocidade em Redis (produção).
+2) Adicionar Postgres/Redis no docker-compose para rastrear decisões e auditoria.

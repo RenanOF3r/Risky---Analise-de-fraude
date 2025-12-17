@@ -17,6 +17,10 @@ data/*.parquet
 models/*.joblib
 models/*.pkl
 
+# Reports (figuras/saídas geradas)
+reports/*
+!reports/.gitkeep
+
 # IDEs
 .vscode/
 .idea/

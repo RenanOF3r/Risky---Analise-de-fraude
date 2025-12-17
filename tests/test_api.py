@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sklearn.linear_model import LogisticRegression
 
 from app.main import app, get_model
-from app.pipeline import build_preprocessor, engineer_features
+from app.pipeline import add_velocity_features_offline, build_preprocessor, engineer_features
 
 
 def build_dummy_model(model_path: str):
@@ -43,6 +43,7 @@ def build_dummy_model(model_path: str):
         ]
     )
     engineered = engineer_features(raw)
+    engineered = add_velocity_features_offline(engineered)
     X = engineered.drop(columns=["isFraud"])
     y = engineered["isFraud"]
     preprocessor, _, _ = build_preprocessor(X)

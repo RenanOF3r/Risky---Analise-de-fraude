@@ -23,12 +23,18 @@ def parse_args() -> argparse.Namespace:
         default="models",
         help="Directory to store model artifacts.",
     )
+    parser.add_argument(
+        "--reports-dir",
+        type=str,
+        default="reports",
+        help="Directory to store evaluation plots and threshold tuning table.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    artifacts = train_and_save(args.csv_path, artifacts_dir=args.artifacts_dir)
+    artifacts = train_and_save(args.csv_path, artifacts_dir=args.artifacts_dir, reports_dir=args.reports_dir)
     metrics_path = Path(artifacts.metrics_path)
     with metrics_path.open() as f:
         metrics = json.load(f)
@@ -37,6 +43,7 @@ def main() -> None:
     print(f"Saved preprocessor to {artifacts.preprocessor_path}")
     print(f"Evaluation metrics (test set):")
     print(json.dumps(metrics, indent=2))
+    print(f"Saved reports to {Path(args.reports_dir).resolve()}")
 
 
 if __name__ == "__main__":
